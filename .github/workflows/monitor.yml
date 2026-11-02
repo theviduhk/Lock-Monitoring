@@ -1,0 +1,47 @@
+name: Team Monitor
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 */6 * * *'   # safety net; chain eka nawathunoth restart wenawa
+
+permissions:
+  actions: write
+  contents: read
+
+# Ekata ekak run wenawa, ekak pending. Chains wadi wenne na.
+concurrency:
+  group: team-monitor
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install deps
+        run: |
+          npm install
+          npx playwright install --with-deps chromium
+
+      - name: Run monitor
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # Secrets use karanna una nam, uncomment karanna:
+          # TM_USER: ${{ secrets.TM_USER }}
+          # TM_PASS: ${{ secrets.TM_PASS }}
+        run: node monitor.js
+
+      - name: Upload debug screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug
+          path: debug/
+          if-no-files-found: ignore
